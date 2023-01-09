@@ -43,10 +43,23 @@ BEGIN
     RETURN @Value
 END
 
+CREATE FUNCTION FreeTables(
+    @reservationDate AS DATETIME
+)
+RETURNS TABLE
+AS
+RETURN  (
+    SELECT [Table].TableNumber
+    FROM [Table]
+        LEFT JOIN TableReservarionDetails TRD on [Table].TableNumber = TRD.TableNumber
+        LEFT JOIN TableReservation TR on TR.ReservationID = TRD.ReservationID
+    WHERE TRD.ReservationID IS NULL OR
+          NOT (DATEDIFF(minute , TR.ReservationStart, @reservationDate) >= 0 AND DATEDIFF(minute , TR.ReservationEnd, @reservationDate) < 0)
+    )
+
+
+
 DROP FUNCTION CustomerInvoices
 DROP FUNCTION InvoiceDetails
 DROP FUNCTION InvoiceValue
-
-SELECT * FROM InvoiceValue (1)
-
-SELECT InvoiceValue(1)
+DROP FUNCTION FreeTables
