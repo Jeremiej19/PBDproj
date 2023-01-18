@@ -120,9 +120,13 @@ CREATE FUNCTION OrderValue(
 RETURNS MONEY
 AS
 BEGIN
+    DECLARE @Discount AS INT
+    SELECT @Discount = (
+        SELECT Discount FROM [Order] WHERE OrderID = @OrderID
+        )
     DECLARE @Value AS MONEY
     SELECT @Value = (
-        SELECT SUM(Quantity*UnitPrice) FROM OrderProducts(@OrderID)
+        SELECT SUM(Quantity*UnitPrice* ((100 - @Discount) / 100.0)) FROM OrderProducts(@OrderID)
         )
     RETURN @Value
 END

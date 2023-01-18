@@ -43,3 +43,7 @@ INSERT INTO Menu VALUES('2023-01-17','2023-01-20',1);
 INSERT INTO MenuDetails VALUES (3,1,5);
 
 INSERT INTO MenuDetails VALUES (3,2,3);
+
+INSERT INTO IndividualCustomer VALUES ('Jan','Kowalski',0)
+
+INSERT INTO Discount VALUES (1,3,NULL,0)

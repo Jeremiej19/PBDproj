@@ -209,3 +209,50 @@ BEGIN
 END
 
 
+CREATE PROCEDURE UseDiscount @OrderID AS INTEGER,
+                             @DiscountID AS INTEGER
+AS
+BEGIN
+    IF NOT EXISTS(SELECT * FROM [Order] WHERE OrderID = @OrderID)
+        BEGIN
+            THROW 51000,'No such order',1
+        END
+    IF NOT EXISTS(SELECT * FROM Discount WHERE DiscountID = @DiscountID)
+        BEGIN
+            THROW 51000,'No such discount',1
+        END
+    IF  (SELECT Discount FROM [Order] WHERE OrderID = @OrderID) <> 0
+        BEGIN
+            THROW 51000,'Order has already applied discount',1
+        END
+    IF  (SELECT Used FROM Discount WHERE DiscountID = @DiscountID) = 1
+        BEGIN
+            THROW 51000,'Discount already used',1
+        END
+    DECLARE @Rate AS INTEGER
+    SELECT @Rate = (
+        SELECT DiscountRate FROM Discount WHERE DiscountID = @DiscountID
+        )
+    IF (SELECT ExpirationDate FROM Discount WHERE DiscountID = @DiscountID) IS NULL
+        BEGIN
+            UPDATE [Order] SET Discount = @Rate WHERE OrderID = @OrderID
+        END
+    ELSE
+        BEGIN
+            IF  (SELECT DATEDIFF(DAY, GETDATE(), ExpirationDate ) FROM Discount WHERE DiscountID = @DiscountID) < 0
+            BEGIN
+                THROW 51000,'Discount has expired', 1
+            END
+            BEGIN TRY
+                BEGIN TRANSACTION;
+                    UPDATE [Order] SET Discount = @Rate WHERE OrderID = @OrderID
+                    UPDATE Discount SET Used = 1 WHERE DiscountID = @DiscountID
+                COMMIT TRANSACTION;
+            END TRY
+            BEGIN CATCH
+                ROLLBACK;
+                THROW
+            END CATCH
+        END
+END
+
