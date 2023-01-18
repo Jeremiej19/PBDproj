@@ -8,7 +8,7 @@ INSERT INTO Product VALUES (1,'Tea',5,1);
 
 INSERT INTO Product VALUES (1,'Water',3,1);
 
-
+INSERT INTO Product VALUES (1,'Coffe',7,1);
 
 INSERT INTO Menu VALUES ('2023-01-01','2023-01-14',1)
 

@@ -132,7 +132,6 @@ CREATE TABLE "Table" (
 CREATE TABLE TableReservarionDetails (
     ReservationID int  NOT NULL,
     TableNumber int  NOT NULL,
-    SeatsReserved int  NOT NULL,
     CONSTRAINT TableReservarionDetails_pk PRIMARY KEY  (TableNumber,ReservationID)
 );
 
