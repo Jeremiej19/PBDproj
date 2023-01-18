@@ -11,7 +11,6 @@ RETURN  (
     WHERE O.CustomerID = @CustomerID
 )
 
-
 CREATE FUNCTION InvoiceDetails(
     @InvoiceID AS INTEGER
 )
@@ -43,19 +42,6 @@ BEGIN
     RETURN @Value
 END
 
-CREATE FUNCTION FreeTables(
-    @reservationStart AS DATETIME,
-    @reservationEnd AS DATETIME
-)
-RETURNS TABLE
-AS
-RETURN  (
-    SELECT [Table].TableNumber
-    FROM [Table]
-    WHERE TableNumber NOT IN (SELECT * FROM OccupiedTables(@reservationStart,@reservationEnd))
-    )
-
-
 CREATE FUNCTION OccupiedTables(
     @reservationStart AS DATETIME,
     @reservationEnd AS DATETIME
@@ -72,6 +58,18 @@ RETURN  (
         OR (DATEDIFF(minute , TR.ReservationStart, @reservationStart) < 0 AND DATEDIFF(minute , @reservationEnd ,TR.ReservationEnd) <= 0)
     )
 
+
+CREATE FUNCTION FreeTables(
+    @reservationStart AS DATETIME,
+    @reservationEnd AS DATETIME
+)
+RETURNS TABLE
+AS
+RETURN  (
+    SELECT [Table].TableNumber
+    FROM [Table]
+    WHERE TableNumber NOT IN (SELECT * FROM OccupiedTables(@reservationStart,@reservationEnd))
+    )
 
 
 
@@ -91,7 +89,7 @@ RETURN (
     AND P.Available = 1
 )
 
-CREATE FUNCTION ProductsInAnOrder(
+CREATE FUNCTION OrderProducts(
     @OrderID AS INTEGER
 )
 RETURNS TABLE
@@ -103,10 +101,28 @@ RETURN (
     WHERE OrderID = @OrderID
     )
 
+CREATE FUNCTION NumberOfOrdersByCustomer(
+    @CustomerID AS INTEGER
+)
+RETURNS INTEGER
+AS
+BEGIN
+    DECLARE @Value as INTEGER
+    SELECT @Value = (
+            SELECT COUNT(OrderID) FROM [Order] WHERE CustomerID = @CustomerID GROUP BY CustomerID
+       )
+    RETURN @Value
+END
 
-DROP FUNCTION CustomerInvoices
-DROP FUNCTION InvoiceDetails
-DROP FUNCTION InvoiceValue
-DROP FUNCTION FreeTables
-DROP FUNCTION OccupiedTables
-DROP FUNCTION ProductsInAnOrder
+CREATE FUNCTION OrderValue(
+    @OrderID AS INTEGER
+)
+RETURNS MONEY
+AS
+BEGIN
+    DECLARE @Value AS MONEY
+    SELECT @Value = (
+        SELECT SUM(Quantity*UnitPrice) FROM OrderProducts(@OrderID)
+        )
+    RETURN @Value
+END
