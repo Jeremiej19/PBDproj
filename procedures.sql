@@ -1,13 +1,17 @@
 CREATE PROCEDURE CreateMenu @StartDate AS DATE,
                             @EndDate AS DATE,
-                            @MenuID AS INT
+                            @MenuID AS INTEGER
 AS
 BEGIN;
     IF EXISTS(SELECT * FROM Menu
     WHERE MenuID = @MenuID)
-    BEGIN;
-        THROW 51000, 'Menu with provided ID already exists', 1;
-    END;
+        BEGIN;
+            THROW 51000, 'Menu with provided ID already exists', 1;
+        END;
+    IF (@StartDate < GETDATE())
+        BEGIN;
+            THROW 51000, 'Cannot create menu for the past', 1
+        END;
     IF (@EndDate < @StartDate)
         BEGIN;
             THROW 51000, 'Start date cannot be later than end date.', 1;
@@ -16,8 +20,8 @@ BEGIN;
 END;
 GO;
 
-CREATE PROCEDURE AddItemToMenu @ProductID AS INT,
-                               @MenuID AS INT
+CREATE PROCEDURE AddItemToMenu @ProductID AS INTEGER,
+                               @MenuID AS INTEGER
 AS
 BEGIN;
     IF NOT EXISTS (SELECT * FROM Product WHERE ProductID = @ProductID)
