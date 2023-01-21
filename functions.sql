@@ -57,8 +57,6 @@ RETURN  (
           NOT (DATEDIFF(minute , TR.ReservationStart, @reservationDate) >= 0 AND DATEDIFF(minute , TR.ReservationEnd, @reservationDate) < 0)
     )
 
--- j
-
 DROP FUNCTION CustomerInvoices
 DROP FUNCTION InvoiceDetails
 DROP FUNCTION InvoiceValue
