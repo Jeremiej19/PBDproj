@@ -5,7 +5,7 @@ BEGIN
         BEGIN
             THROW 51000,'No such customer',1
         END
-    INSERT INTO [Order] OUTPUT Inserted.OrderID VALUES (@CustomerID,NULL,GETDATE(),NULL,0,0,0)
+    INSERT INTO [Order] OUTPUT Inserted.OrderID VALUES (@CustomerID,NULL,GETDATE(),GETDATE(),0,0,0)
 END
 --
 --
@@ -103,8 +103,13 @@ BEGIN
         END
     ELSE
         BEGIN
-            UPDATE OrderDetails SET Quantity = Quantity + @Amount
+            UPDATE OrderDetails SET Quantity = Quantity + @Amount WHERE OrderID = @OrderID AND ProductID = @ProductID
         END
+    IF EXISTS(SELECT * FROM IndividualCustomer WHERE CustomerID = (SELECT CustomerID FROM [Order] WHERE OrderID = @OrderID))
+    BEGIN
+        UPDATE IndividualCustomer
+        SET MoneyAccumulatedForNextDiscount = MoneyAccumulatedForNextDiscount + (@Amount*@price)
+    END
 END
 --
 --
@@ -229,7 +234,7 @@ BEGIN
         BEGIN
             THROW 51000,'Discount already used',1
         END
-    DECLARE @Rate AS INTEGER
+    DECLARE @Rate AS DECIMAL(5,2)
     SELECT @Rate = (
         SELECT DiscountRate FROM Discount WHERE DiscountID = @DiscountID
         )
@@ -256,3 +261,25 @@ BEGIN
         END
 END
 
+
+CREATE PROCEDURE AddR2Discount @CustomerID AS INTEGER
+AS
+BEGIN
+    IF NOT EXISTS(SELECT * FROM Customer WHERE CustomerID = @CustomerID)
+        BEGIN
+            THROW 51000,'No such customer',1
+        END
+        DECLARE @K2 AS MONEY
+        SET @K2 = 50
+        DECLARE @R2 AS DECIMAL(5,2)
+        SET @R2 = 0.05
+        DECLARE @D1 AS INTEGER
+        SET @D1 = 10
+        INSERT INTO Discount VALUES (@CustomerID,@R2,DATEADD(DAY ,@D1,GETDATE()),0)
+        UPDATE IndividualCustomer SET MoneyAccumulatedForNextDiscount = MoneyAccumulatedForNextDiscount - @K2
+            WHERE CustomerID = @CustomerID
+        IF (SELECT MoneyAccumulatedForNextDiscount FROM IndividualCustomer) >= @K2
+        BEGIN
+            EXEC AddR2Discount @CustomerID
+        END
+END

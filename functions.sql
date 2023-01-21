@@ -33,7 +33,7 @@ AS
 BEGIN
    DECLARE @Value as DECIMAL
    SELECT @Value = (
-          SELECT SUM(UnitPrice * Quantity * ((100 - O.Discount) / 100.0)) value
+         SELECT SUM(UnitPrice * Quantity * (1 - O.Discount)) value
     FROM [Order] O
              INNER JOIN OrderDetails OD on O.OrderID = OD.OrderID
     WHERE InvoiceID = @InvoiceID
@@ -120,13 +120,13 @@ CREATE FUNCTION OrderValue(
 RETURNS MONEY
 AS
 BEGIN
-    DECLARE @Discount AS INT
+    DECLARE @Discount AS DECIMAL(5,2)
     SELECT @Discount = (
         SELECT Discount FROM [Order] WHERE OrderID = @OrderID
         )
     DECLARE @Value AS MONEY
     SELECT @Value = (
-        SELECT SUM(Quantity*UnitPrice* ((100 - @Discount) / 100.0)) FROM OrderProducts(@OrderID)
+        SELECT SUM(Quantity*UnitPrice* (1 - @Discount) ) FROM OrderProducts(@OrderID)
         )
     RETURN @Value
 END

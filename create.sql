@@ -31,7 +31,7 @@ CREATE TABLE Customer (
 CREATE TABLE Discount (
     DiscountID int  NOT NULL IDENTITY,
     CustomerID int  NOT NULL,
-    DiscountRate int  NOT NULL,
+    DiscountRate DECIMAL(5,2)  NOT NULL,
     ExpirationDate date  NULL,
     Used bit  NOT NULL,
     CONSTRAINT CustomerID PRIMARY KEY  (DiscountID)
@@ -77,8 +77,8 @@ CREATE TABLE "Order" (
     CustomerID int  NOT NULL,
     InvoiceID int  NULL,
     OrderDate datetime  NOT NULL,
-    CollectionDate datetime  NULL,
-    Discount int  NOT NULL,
+    CollectionDate datetime NOT NULL,
+    Discount DECIMAL(5,2)  NOT NULL,
     Takeaway bit  NOT NULL,
     Cancelled bit  NOT NULL,
     CONSTRAINT Order_pk PRIMARY KEY  (OrderID)
@@ -219,6 +219,19 @@ ALTER TABLE TableReservarionDetails ADD CONSTRAINT TableReservarionDetails_Table
 ALTER TABLE TableReservation ADD CONSTRAINT TableReservation_Order
     FOREIGN KEY (OrderID)
     REFERENCES "Order" (OrderID);
+
+
+CREATE TABLE AuxiliaryValues (
+   MinValueOfOrderToBookTable int  NOT NULL,
+   MinNumberOfOrdersForPermanentDiscount int  NOT NULL,
+   MinValueOfOrderForPermanentDiscount MONEY  NOT NULL,
+   MinTotalValueOfOrdersForOneTimeDiscount MONEY  NOT NULL,
+   RateOfPermanentDiscount DECIMAL(5,2)  NOT NULL,
+   RateOfOneTimeDiscount DECIMAL(5,2)  NOT NULL,
+   OneTimeDiscountValidityLength int  NOT NULL,
+   LastSignificantMenuChange date  NOT NULL
+);
+
 
 -- -- sequences
 -- -- Sequence: Category_seq
