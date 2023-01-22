@@ -46,6 +46,10 @@ INSERT INTO MenuDetails VALUES (1,2,3);
 
 INSERT INTO Menu VALUES('2023-01-14','2023-01-16',1);
 
+INSERT INTO Company VALUES('1234567890', 'Cisco')
+INSERT INTO Company VALUES('0987654321', 'Comarch')
+INSERT INTO IndividualCustomer VALUES('Piotr','Nowak', 0)
+insert into Customer values ('318742181', NULL)
 
 INSERT INTO Customer VALUES('123456789',null);
 
