@@ -44,6 +44,15 @@ INSERT INTO MenuDetails VALUES (3,1,5);
 
 INSERT INTO MenuDetails VALUES (3,2,3);
 
-INSERT INTO IndividualCustomer VALUES ('Jan','Kowalski',0)
+INSERT INTO IndividualCustomer VALUES (1,'Jan','Kowalski',0)
+INSERT INTO IndividualCustomer VALUES (2,'Piotr','Nowak',0)
+
+INSERT INTO Company VALUES (3,'1234567890','Cisco')
+INSERT INTO Company VALUES (4,'0123456789','Comarch')
 
 INSERT INTO Discount VALUES (1,3,NULL,0)
+
+INSERT INTO AuxiliaryValues VALUES (50,10,30,100,0.03,0.05,10,'2023-01-21')
+
+INSERT INTO Company VALUES (1,'0123456789','Azoty')
+

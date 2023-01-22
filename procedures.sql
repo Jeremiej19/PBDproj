@@ -1,4 +1,5 @@
 CREATE PROCEDURE CreateOrder @CustomerID as INTEGER
+
 AS
 BEGIN
     IF NOT EXISTS(SELECT * FROM Customer WHERE CustomerID = @CustomerID)
@@ -41,7 +42,7 @@ BEGIN
     BEGIN TRY
         BEGIN TRANSACTION;
         INSERT INTO [Order] OUTPUT Inserted.OrderID INTO @TMP
-                            VALUES (@CustomerID, NULL, GETDATE(), NULL, 0, 0, 0);
+                            VALUES (@CustomerID, NULL, GETDATE(), GETDATE(), 0, 0, 0);
         DECLARE @OrderID AS INTEGER
         SELECT @OrderID = (
             SELECT * FROM @TMP
@@ -74,28 +75,16 @@ BEGIN
         BEGIN
             THROW 51000,'No such product',1
         END
-    IF (SELECT Takeaway FROM [Order] WHERE OrderID = @OrderID) = 1
+    IF NOT EXISTS(SELECT * FROM MenuOn((SELECT CollectionDate FROM [Order] WHERE OrderID = @OrderID))
+                  WHERE ProductID = @ProductID)
         BEGIN
-            IF NOT EXISTS(SELECT *
-                          FROM MenuOn((SELECT CollectionDate FROM [Order]
-                                                             WHERE OrderID = @OrderID))
-                          WHERE ProductID = @ProductID)
-                BEGIN
-                    THROW 51000,'Item not in respective menu',1
-                END
-            SET @price = (SELECT Price
-                          FROM MenuOn((SELECT CollectionDate FROM [Order]
-                                                             WHERE OrderID = @OrderID))
-                          WHERE ProductID = @ProductID)
+            THROW 51000,'Item not in respective menu',1
         END
-    ELSE
-        BEGIN
-            IF NOT EXISTS(SELECT * FROM CurrentMenu WHERE ProductID = @ProductID)
-                BEGIN
-                    THROW 51000,'Item not in current menu',1
-                END
-            SET @price = (SELECT Price FROM CurrentMenu WHERE ProductID = @ProductID)
-        END
+    SELECT @price = (SELECT Price
+                  FROM MenuOn((SELECT CollectionDate FROM [Order]
+                                                     WHERE OrderID = @OrderID))
+                  WHERE ProductID = @ProductID)
+
     IF NOT EXISTS(SELECT * FROM OrderDetails
                            WHERE OrderID = @OrderID AND ProductID = @ProductID)
         BEGIN
@@ -105,10 +94,15 @@ BEGIN
         BEGIN
             UPDATE OrderDetails SET Quantity = Quantity + @Amount WHERE OrderID = @OrderID AND ProductID = @ProductID
         END
-    IF EXISTS(SELECT * FROM IndividualCustomer WHERE CustomerID = (SELECT CustomerID FROM [Order] WHERE OrderID = @OrderID))
+    DECLARE @CustomerID AS INTEGER
+    SELECT @CustomerID = (
+        (SELECT CustomerID FROM [Order] WHERE OrderID = @OrderID)
+        )
+    IF EXISTS(SELECT * FROM IndividualCustomer WHERE CustomerID = @CustomerID)
     BEGIN
         UPDATE IndividualCustomer
         SET MoneyAccumulatedForNextDiscount = MoneyAccumulatedForNextDiscount + (@Amount*@price)
+        WHERE CustomerID = @CustomerID;
     END
 END
 --
@@ -282,4 +276,112 @@ BEGIN
         BEGIN
             EXEC AddR2Discount @CustomerID
         END
+END
+
+CREATE PROCEDURE AddPersonToReservation @ReservationID AS INTEGER,
+                                        @FirstName AS nvarchar(30),
+                                        @Surname AS nvarchar(30)
+AS
+BEGIN
+    IF NOT EXISTS(SELECT * FROM TableReservation WHERE ReservationID = @ReservationID)
+        BEGIN
+            THROW 51000,'No such reservation',1
+        END
+        INSERT INTO Person VALUES (@ReservationID,@FirstName,@Surname)
+END
+
+
+CREATE PROCEDURE AddTableToReservation @ReservationID AS INTEGER,
+                                       @TableNumber AS INTEGER
+AS
+BEGIN
+    IF NOT EXISTS(SELECT * FROM TableReservation WHERE ReservationID = @ReservationID)
+        BEGIN
+            THROW 51000,'No such reservation',1
+        END
+    IF NOT EXISTS(SELECT * FROM [Table] WHERE TableNumber = @TableNumber)
+        BEGIN
+            THROW 51000,'No such table',1
+        END
+    DECLARE @StartDate AS DATETIME
+    DECLARE @EndDate AS DATETIME
+    SELECT @StartDate = (
+        SELECT ReservationStart FROM TableReservation WHERE ReservationID = @ReservationID
+        )
+    SELECT @EndDate = (
+        SELECT ReservationEnd FROM TableReservation WHERE ReservationID = @ReservationID
+        )
+    IF @TableNumber NOT IN (SELECT * FROM FreeTables(@StartDate, @EndDate))
+        BEGIN
+            THROW 51000,'Table is not free during specified time',1
+        END
+    INSERT INTO TableReservarionDetails VALUES (@ReservationID,@TableNumber)
+END
+
+
+CREATE PROCEDURE CreateInvoice @OrderID AS INTEGER
+AS
+BEGIN
+    IF NOT EXISTS(SELECT * FROM [Order] WHERE OrderID = @OrderID)
+        BEGIN
+            THROW 51000,'No such order',1
+        END
+    IF ( SELECT InvoiceID FROM [Order] WHERE OrderID = @OrderID ) IS NOT NULL
+        BEGIN
+            THROW 51000,'Order already has an invoice',1
+        END
+    DECLARE @InvoiceID AS INTEGER
+    DECLARE @TMP AS TABLE (
+        InvoiceID INTEGER
+                          )
+    INSERT INTO Invoice OUTPUT inserted.InvoiceID INTO @TMP VALUES (GETDATE(),0)
+    SELECT @InvoiceID = (
+        SELECT * FROM @TMP
+        )
+    UPDATE [Order] SET InvoiceID = @InvoiceID WHERE OrderID = @OrderID
+END
+
+CREATE PROCEDURE CreateInvoiceMonthly @CustomerID AS INTEGER,
+                                      @Month AS INTEGER,
+                                      @Year AS INTEGER
+AS
+BEGIN
+    IF NOT EXISTS(SELECT * FROM [Company] WHERE CustomerID = @CustomerID)
+        BEGIN
+            THROW 51000,'No such order',1
+        END
+    IF NOT EXISTS(SELECT OrderID FROM [Order]
+                       WHERE CustomerID = @CustomerID
+                         AND MONTH(OrderDate) = @Month
+                         AND YEAR(OrderDate) = @Year
+                         AND InvoiceID IS NULL)
+        BEGIN
+            THROW 51000,'No orders without invoice',1
+        END
+
+    DECLARE @InvoiceID AS INTEGER
+    DECLARE @TMP AS TABLE (
+        InvoiceID INTEGER
+                          )
+    INSERT INTO Invoice OUTPUT inserted.InvoiceID INTO @TMP VALUES (GETDATE(),1)
+    SELECT @InvoiceID = (
+        SELECT * FROM @TMP
+        )
+
+    DECLARE @OrderID AS INTEGER
+    DECLARE CursorOrder CURSOR FOR
+            SELECT OrderID FROM [Order]
+                       WHERE CustomerID = @CustomerID
+                         AND MONTH(OrderDate) = @Month
+                         AND YEAR(OrderDate) = @Year
+                         AND InvoiceID IS NULL
+    OPEN CursorOrder
+    FETCH NEXT FROM CursorOrder INTO
+        @OrderID
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        UPDATE [Order] SET InvoiceID = @InvoiceID WHERE OrderID = @OrderID
+        FETCH NEXT FROM CursorOrder INTO
+        @OrderID
+    END
 END

@@ -114,3 +114,33 @@ UPDATE [Order] SET Discount = 0 WHERE OrderID = 1
 SELECT dbo.OrderValue(1)
 
 SELECT * FROM OrderProducts(1)
+
+SELECT * FROM CurrentMenu
+
+EXEC AddTableToReservation 3,3
+
+EXEC AddPersonToReservation 3, 'Jeremiasz', 'Pawel'
+
+EXEC AddPersonToReservation 3, 'Jan', 'Kowalski'
+
+EXEC CreateInvoice 4
+
+
+ALTER TABLE Company ALTER COLUMN CustomerID int  NOT NULL
+
+
+SELECT * FROM CurrentMenu
+
+EXEC AddItemToMenu 12,3
+
+EXEC CreateOrder 3
+
+BEGIN TRANSACTION;
+EXEC AddItemToOrder 15,2,1
+COMMIT TRANSACTION ;
+
+EXEC CreateInvoice 14
+
+BEGIN TRANSACTION
+EXEC CreateInvoiceMonthly 3,1,2023
+COMMIT TRANSACTION

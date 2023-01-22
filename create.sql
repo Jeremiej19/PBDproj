@@ -13,11 +13,12 @@ CREATE TABLE Category (
 
 -- Table: Company
 CREATE TABLE Company (
-    CustomerID int  NOT NULL IDENTITY,
+    CustomerID int  NOT NULL,
     NIP char(10)  NOT NULL,
     CompanyName nvarchar(50)  NOT NULL,
     CONSTRAINT Company_pk PRIMARY KEY  (CustomerID)
 );
+
 
 -- Table: Customer
 CREATE TABLE Customer (
@@ -26,6 +27,8 @@ CREATE TABLE Customer (
     Fax char(10)  NULL,
     CONSTRAINT Customer_pk PRIMARY KEY  (CustomerID)
 );
+
+
 
 -- Table: Discount
 CREATE TABLE Discount (
@@ -39,7 +42,7 @@ CREATE TABLE Discount (
 
 -- Table: IndividualCustomer
 CREATE TABLE IndividualCustomer (
-    CustomerID int  NOT NULL IDENTITY,
+    CustomerID int  NOT NULL,
     Firstname nvarchar(30)  NOT NULL,
     Surname nvarchar(30)  NOT NULL,
     MoneyAccumulatedForNextDiscount money  NOT NULL,
@@ -222,7 +225,7 @@ ALTER TABLE TableReservation ADD CONSTRAINT TableReservation_Order
 
 
 CREATE TABLE AuxiliaryValues (
-   MinValueOfOrderToBookTable int  NOT NULL,
+   MinValueOfOrderToBookTable MONEY NOT NULL,
    MinNumberOfOrdersForPermanentDiscount int  NOT NULL,
    MinValueOfOrderForPermanentDiscount MONEY  NOT NULL,
    MinTotalValueOfOrdersForOneTimeDiscount MONEY  NOT NULL,

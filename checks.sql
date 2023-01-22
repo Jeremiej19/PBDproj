@@ -4,7 +4,7 @@ ALTER TABLE Discount
 
 ALTER TABLE Discount
     ADD CONSTRAINT CHK_DiscountRate
-        CHECK ( DiscountRate <= 1 AND DiscountRate >= 0 )
+        CHECK ( DiscountRate <= 1 AND DiscountRate > 0 )
 
 ALTER TABLE [Order]
     ADD CONSTRAINT CHK_Discount
