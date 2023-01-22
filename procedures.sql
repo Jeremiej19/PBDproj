@@ -109,6 +109,10 @@ BEGIN;
         WHERE EndDate = DATEADD(day, -1, @startdate2)
         AND IsValid = 1
     )
+    IF @previousmenu IS NULL
+        BEGIN;
+            THROW 51000, 'No valid menu that precedes validated menu', 1;
+        END;
     IF DATEDIFF(day, (SELECT LastSignificantMenuChange from AuxiliaryValues), @startdate2) > 14
     AND (2 * (SELECT COUNT(*) FROM MenuDetails AS P
     INNER JOIN MenuDetails AS N
