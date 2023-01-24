@@ -3,7 +3,9 @@ CREATE TRIGGER addDiscountR2
     AFTER UPDATE
     AS
         DECLARE @K2 AS MONEY
-        SET @K2 = 50
+        SELECT @K2 = (
+            SELECT MinTotalValueOfOrdersForOneTimeDiscount FROM AuxiliaryValues
+            )
         IF (SELECT MoneyAccumulatedForNextDiscount FROM inserted) >= @K2
             BEGIN
                 DECLARE @CustomerID AS INTEGER
@@ -18,7 +20,11 @@ CREATE TRIGGER addDiscountR1
     ON IndividualCustomer
     AFTER UPDATE
     AS
-        IF EXISTS(SELECT * FROM Discount WHERE CustomerID = @CustomerID AND ExpirationDate IS NULL)
+        DECLARE @CustomerID AS INTEGER
+        SELECT @CustomerID = (
+            (SELECT CustomerID FROM inserted))
+        IF EXISTS(SELECT * FROM Discount WHERE CustomerID = @CustomerID
+                                           AND ExpirationDate IS NULL)
             BEGIN
                 RETURN
             END
@@ -34,10 +40,8 @@ CREATE TRIGGER addDiscountR1
                 SELECT @R1 = (
             SELECT RateOfPermanentDiscount FROM AuxiliaryValues
             )
-         DECLARE @CustomerID AS INTEGER
-                SELECT @CustomerID = (
-                        (SELECT CustomerID FROM inserted))
-        IF (SELECT Count(*) FROM [Order] WHERE [Order].CustomerID = @CustomerID AND InvoiceValue(InvoiceID) >= @K1 ) >= @Z1
+        IF (SELECT Count(*) FROM [Order] WHERE [Order].CustomerID = @CustomerID
+                                           AND dbo.OrderValue (OrderID) >= @K1 ) >= @Z1
             BEGIN
                 INSERT INTO Discount VALUES (@CustomerID,@R1,NULL,0)
             END

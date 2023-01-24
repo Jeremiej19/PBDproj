@@ -136,7 +136,7 @@ EXEC AddItemToMenu 12,3
 EXEC CreateOrder 3
 
 BEGIN TRANSACTION;
-EXEC AddItemToOrder 15,2,1
+EXEC AddItemToOrder 16,12,1
 COMMIT TRANSACTION ;
 
 EXEC CreateInvoice 14
@@ -144,3 +144,62 @@ EXEC CreateInvoice 14
 BEGIN TRANSACTION
 EXEC CreateInvoiceMonthly 3,1,2023
 COMMIT TRANSACTION
+
+SELECT * FROM CustomerInvoices (3)
+
+SELECT dbo.InvoiceValue(6)
+SELECT dbo.OrderValue(15)
+SELECT * FROM dbo.OrderProducts (16)
+
+SELECT * FROM OrderDetails
+
+          SELECT SUM(UnitPrice * Quantity * (1 - O.Discount)) value
+    FROM [Order] O
+             INNER JOIN OrderDetails OD on O.OrderID = OD.OrderID
+    WHERE InvoiceID = 6
+
+SELECT DATEDIFF(DAY, '2023-01-21', '2023-01-25')
+
+SELECT DATEPART(WEEKDAY ,GETDATE())
+
+SELECT * FROM CustomerInvoices (1)
+
+EXEC AddItemToOrder 4,2,1
+EXEC UseDiscount 4,19
+
+SELECT * FROM [Order]
+SELECT * FROM [OrderDetails]
+SELECT * FROM Discount
+SELECT * FROM TableReservation
+SELECT * FROM TableReservarionDetails
+SELECT DATEADD(day,GETDATE(),2)
+EXEC CreateOrderWithCollectionDate 3, '2023-02-10',1
+
+SELECT * FROM MenuOn('2023-02-10')
+
+EXEC CreateOrder 2
+BEGIN TRANSACTION;
+EXEC AddItemToOrder 31,12,10
+COMMIT TRANSACTION ;
+
+EXEC AddPayment 31, 310.4
+
+SELECT * FROM OrderProducts (30)
+SELECT dbo.OrderValue(31)
+EXEC UseDiscount 31,54
+
+SELECT DATEPART(WEEKDAY ,'2023-02-10')
+SELECT DATEDIFF(day,GETDATE(),'2023-02-10')
+SELECT GETDATE()
+
+SELECT SUM(UnitPrice*Quantity) FROM OrderProducts(19)
+
+EXEC CreateOrderWithReservation 2,'2023-01-29 15:34:58.290', '2023-01-29 16:34:58.290', 2
+
+
+DECLARE @A1 AS DATETIME
+SET @A1 = CAST('2023-01-25 00:34:58.290' AS DATETIME)
+SELECT 1 WHERE '2023-01-25 00:34:58.291' > '2023-01-25 00:34:58.290'
+
+
+SELECT CAST('2023-01-25 00:34:58.290' AS DATETIME) > CAST('2023-01-25 00:34:58.290' AS DATETIME)

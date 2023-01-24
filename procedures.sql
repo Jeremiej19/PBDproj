@@ -10,8 +10,9 @@ BEGIN
 END
 --
 --
-CREATE PROCEDURE CreateOrderTakeaway @CustomerID AS INTEGER,
-                                     @CollectionDate AS DATETIME
+CREATE PROCEDURE CreateOrderWithCollectionDate @CustomerID AS INTEGER,
+                                     @CollectionDate AS DATETIME,
+                                     @Takeaway AS BIT = 0
 AS
 BEGIN
     IF NOT EXISTS(SELECT * FROM Customer WHERE CustomerID = @CustomerID)
@@ -22,7 +23,7 @@ BEGIN
         BEGIN
             THROW 51000,'Cant create reservation for past date', 1
         END
-    INSERT INTO [Order] OUTPUT Inserted.OrderID VALUES (@CustomerID, NULL, GETDATE(), @CollectionDate, 0, 1, 0)
+    INSERT INTO [Order] OUTPUT Inserted.OrderID VALUES (@CustomerID, NULL, GETDATE(), @CollectionDate, 0, @Takeaway, 0)
 END
 --
 --
@@ -80,6 +81,22 @@ BEGIN
         BEGIN
             THROW 51000,'Item not in respective menu',1
         END
+    DECLARE @CollectionDate AS DATETIME
+    SELECT @CollectionDate = (
+        SELECT OrderDate FROM [Order] WHERE OrderID = @OrderID
+        )
+    IF EXISTS(SELECT * FROM Product INNER JOIN Category C ON C.CategoryID = Product.CategoryID
+                WHERE ProductID = @ProductID AND C.Name = 'Seafood')
+        BEGIN
+            IF NOT ( DATEPART(WEEKDAY, @CollectionDate) BETWEEN 5 AND 7 AND (
+                (DATEDIFF(day,@CollectionDate,GETDATE()) >= 5 ) OR
+                (DATEDIFF(day,@CollectionDate,GETDATE()) IN (3,4) AND DATEPART(WEEKDAY,GETDATE()) IN (1,2) )
+                ) )
+                BEGIN
+                    THROW 51000, 'Seafood must be ordered before tuesday',1
+                END
+        END
+
     SELECT @price = (SELECT Price
                   FROM MenuOn((SELECT CollectionDate FROM [Order]
                                                      WHERE OrderID = @OrderID))
@@ -114,9 +131,13 @@ CREATE PROCEDURE CreateReservation @OrderID AS INTEGER,
 AS
 BEGIN
     DECLARE @WK AS INTEGER
-    SET @WK = 5
+    SELECT @WK = (
+        SELECT MinNumberOfOrdersForRemoteOrders FROM AuxiliaryValues
+        )
     DECLARE @WZ AS MONEY
-    SET @WZ = 50
+    SELECT @WZ = (
+        SELECT MinValueOfOrderToBookTable FROM AuxiliaryValues
+        )
     IF NOT EXISTS(SELECT * FROM [Order] WHERE OrderID = @OrderID)
         BEGIN
             THROW 51000,'No such order',1
@@ -135,11 +156,15 @@ BEGIN
         )
     IF dbo.NumberOfOrdersByCustomer(@CustomerID) < @WK
         BEGIN
-            THROW 51000, ' orders required to make a reservation' , 1
+            DECLARE @Message AS NVARCHAR(100) =
+                CONCAT(@WK, N' orders required to make a reservation');
+            THROW 51000, @Message , 1
         END
-    IF (SELECT SUM(UnitPrice*Quantity) FROM OrderProducts(@OrderID)) < @WZ
+    IF (SELECT SUM(UnitPrice*Quantity) FROM OrderProducts(@OrderID)) IS NULL OR
+       (SELECT SUM(UnitPrice*Quantity) FROM OrderProducts(@OrderID)) < @WZ
         BEGIN
-            THROW 51000, 'Order value must be at least ' , 1
+            DECLARE @Message2 AS NVARCHAR(100) = CONCAT('Order value must be at least ',@WZ);
+            THROW 51000, @Message2 , 1
         END
     IF NOT EXISTS(SELECT * FROM [Table] WHERE TableNumber = @TableNumber)
         BEGIN
@@ -264,13 +289,20 @@ BEGIN
             THROW 51000,'No such customer',1
         END
         DECLARE @K2 AS MONEY
-        SET @K2 = 50
+        SELECT @K2 = (
+            SELECT MinTotalValueOfOrdersForOneTimeDiscount FROM AuxiliaryValues
+            )
         DECLARE @R2 AS DECIMAL(5,2)
-        SET @R2 = 0.05
+        SELECT @R2 = (
+            SELECT RateOfOneTimeDiscount FROM AuxiliaryValues
+            )
         DECLARE @D1 AS INTEGER
-        SET @D1 = 10
+        SELECT @D1 = (
+            SELECT OneTimeDiscountValidityLength FROM AuxiliaryValues
+            )
         INSERT INTO Discount VALUES (@CustomerID,@R2,DATEADD(DAY ,@D1,GETDATE()),0)
-        UPDATE IndividualCustomer SET MoneyAccumulatedForNextDiscount = MoneyAccumulatedForNextDiscount - @K2
+        UPDATE IndividualCustomer
+            SET MoneyAccumulatedForNextDiscount = MoneyAccumulatedForNextDiscount - @K2
             WHERE CustomerID = @CustomerID
         IF (SELECT MoneyAccumulatedForNextDiscount FROM IndividualCustomer) >= @K2
         BEGIN
@@ -348,7 +380,7 @@ AS
 BEGIN
     IF NOT EXISTS(SELECT * FROM [Company] WHERE CustomerID = @CustomerID)
         BEGIN
-            THROW 51000,'No such order',1
+            THROW 51000,'No such company',1
         END
     IF NOT EXISTS(SELECT OrderID FROM [Order]
                        WHERE CustomerID = @CustomerID

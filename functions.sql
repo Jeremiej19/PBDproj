@@ -4,7 +4,7 @@ CREATE FUNCTION CustomerInvoices(
 RETURNS TABLE
 AS
 RETURN  (
-    SELECT I.InvoiceID
+    SELECT I.InvoiceID, I.CreateDate, dbo.InvoiceValue(I.InvoiceID) AS Value
     FROM Customer
         INNER JOIN [Order] O on Customer.CustomerID = O.CustomerID
         INNER JOIN Invoice I on O.InvoiceID = I.InvoiceID
@@ -28,16 +28,15 @@ RETURN  (
 CREATE FUNCTION InvoiceValue(
     @InvoiceID AS INTEGER
 )
-RETURNS DECIMAL
+RETURNS MONEY
 AS
 BEGIN
-   DECLARE @Value as DECIMAL
+   DECLARE @Value as MONEY
    SELECT @Value = (
-         SELECT SUM(UnitPrice * Quantity * (1 - O.Discount)) value
+          SELECT SUM(UnitPrice * Quantity * (1 - O.Discount)) value
     FROM [Order] O
              INNER JOIN OrderDetails OD on O.OrderID = OD.OrderID
     WHERE InvoiceID = @InvoiceID
-    GROUP BY OD.OrderID
        )
     RETURN @Value
 END
@@ -87,6 +86,7 @@ RETURN (
     WHERE DATEDIFF(day, StartDate, @date) >= 0
     AND DATEDIFF(day, EndDate, @date) < 0
     AND P.Available = 1
+    AND M.IsValid = 1
 )
 
 CREATE FUNCTION OrderProducts(

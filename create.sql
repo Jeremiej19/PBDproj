@@ -147,6 +147,9 @@ CREATE TABLE TableReservation (
     CONSTRAINT TableReservation_pk PRIMARY KEY  (ReservationID)
 );
 
+ALTER TABLE    TableReservation
+ADD CONSTRAINT AK_OrderID UNIQUE (OrderID);
+
 -- foreign keys
 -- Reference: Company_Customer (table: Company)
 ALTER TABLE Company ADD CONSTRAINT Company_Customer
